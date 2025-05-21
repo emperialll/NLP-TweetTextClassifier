@@ -22,28 +22,47 @@ import re
 # Sample dataset (in real cases, load from a CSV or database)
 data = {
     'tweet': [
+        # Complaints (10 samples)
         "Your service is terrible!",
-        "Love your quick response!",
-        "Can you add more payment options?",
         "This is the worst experience ever.",
-        "Great job, keep it up!",
-        "Please fix the app crashing issue.",
         "Awful customer support.",
+        "Not happy with the delay.",
+        "Your app keeps crashing, fix it!",
+        "Terrible product quality.",
+        "Customer service is a nightmare.",
+        "Delivery was late again.",
+        "Completely disappointed with my order.",
+        "Why is your service so bad?",
+        # Complements (10 samples)
+        "Love your quick response!",
+        "Great job, keep it up!",
         "Amazing service, thank you!",
+        "Fantastic support team!",
+        "Really impressed with your product!",
+        "Best customer service ever!",
+        "Super happy with my purchase!",
+        "Your app is awesome!",
+        "Thanks for the great experience!",
+        "You guys rock!",
+        # Requests (10 samples)
+        "Can you add more payment options?",
+        "Please fix the app crashing issue.",
         "Could you help with my account?",
-        "Not happy with the delay."
+        "Can you provide a refund option?",
+        "Please add more features to the app.",
+        "Could you expedite my order?",
+        "Can you clarify your return policy?",
+        "Please send me a replacement part.",
+        "Can you update the delivery status?",
+        "Could you offer a discount code?"
     ],
     'label': [
-        'complaint',
-        'complement',
-        'request',
-        'complaint',
-        'complement',
-        'request',
-        'complaint',
-        'complement',
-        'request',
-        'complaint'
+        'complaint', 'complaint', 'complaint', 'complaint', 'complaint',
+        'complaint', 'complaint', 'complaint', 'complaint', 'complaint',
+        'complement', 'complement', 'complement', 'complement', 'complement',
+        'complement', 'complement', 'complement', 'complement', 'complement',
+        'request', 'request', 'request', 'request', 'request',
+        'request', 'request', 'request', 'request', 'request'
     ]
 }
 
@@ -78,6 +97,12 @@ vectorizer = TfidfVectorizer(max_features=1000)
 X = vectorizer.fit_transform(df['cleaned_tweet']).toarray()
 y = df['label']
 
-# Print sample of cleaned data and TF-IDF features
-print("Sample cleaned tweets:\n", df[['tweet', 'cleaned_tweet']].head())
-print("\nTF-IDF feature shape:", X.shape)
+# Split the dataset into training and testing sets (80% train, 20% test)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y)
+
+# Print the sizes of the splits
+print("Training set size:", X_train.shape)
+print("Testing set size:", X_test.shape)
+
+# Note: 10-fold cross-validation will be implemented during model training
