@@ -22,7 +22,7 @@ import re
 # Sample dataset (in real cases, load from a CSV or database)
 data = {
     'tweet': [
-        # Complaints (10 samples)
+        # Complaints (15 samples)
         "Your service is terrible!",
         "This is the worst experience ever.",
         "Awful customer support.",
@@ -33,7 +33,12 @@ data = {
         "Delivery was late again.",
         "Completely disappointed with my order.",
         "Why is your service so bad?",
-        # Complements (10 samples)
+        "App is unusable, so frustrated!",
+        "Poor response time, very upset.",
+        "Product broke after one use.",
+        "Billing issues are ridiculous!",
+        "No help from your team, awful!",
+        # Complements (15 samples)
         "Love your quick response!",
         "Great job, keep it up!",
         "Amazing service, thank you!",
@@ -44,7 +49,12 @@ data = {
         "Your app is awesome!",
         "Thanks for the great experience!",
         "You guys rock!",
-        # Requests (10 samples)
+        "Fast delivery, very pleased!",
+        "Your team went above and beyond!",
+        "Love the new features, great work!",
+        "Such a smooth experience, thanks!",
+        "Top-notch quality, highly recommend!",
+        # Requests (15 samples)
         "Can you add more payment options?",
         "Please fix the app crashing issue.",
         "Could you help with my account?",
@@ -54,13 +64,21 @@ data = {
         "Can you clarify your return policy?",
         "Please send me a replacement part.",
         "Can you update the delivery status?",
-        "Could you offer a discount code?"
+        "Could you offer a discount code?",
+        "Please provide a user guide.",
+        "Can you reset my password?",
+        "Could you check my order status?",
+        "Please add dark mode to the app.",
+        "Can you confirm my subscription?"
     ],
     'label': [
         'complaint', 'complaint', 'complaint', 'complaint', 'complaint',
         'complaint', 'complaint', 'complaint', 'complaint', 'complaint',
+        'complaint', 'complaint', 'complaint', 'complaint', 'complaint',
         'complement', 'complement', 'complement', 'complement', 'complement',
         'complement', 'complement', 'complement', 'complement', 'complement',
+        'complement', 'complement', 'complement', 'complement', 'complement',
+        'request', 'request', 'request', 'request', 'request',
         'request', 'request', 'request', 'request', 'request',
         'request', 'request', 'request', 'request', 'request'
     ]
@@ -101,8 +119,27 @@ y = df['label']
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y)
 
-# Print the sizes of the splits
-print("Training set size:", X_train.shape)
-print("Testing set size:", X_test.shape)
+# Initialize models
+logistic_model = LogisticRegression(
+    multi_class='multinomial', max_iter=1000, random_state=42)
+naive_bayes_model = MultinomialNB()
+svm_model = LinearSVC(multi_class='ovr', random_state=42)
 
-# Note: 10-fold cross-validation will be implemented during model training
+# Dictionary to store models and their names
+models = {
+    'Logistic Regression': logistic_model,
+    'Naive Bayes': naive_bayes_model,
+    'Linear SVM': svm_model
+}
+
+# Perform 10-fold cross-validation for each model
+for model_name, model in models.items():
+    # Train the model on the training set
+    model.fit(X_train, y_train)
+
+    # Evaluate with 10-fold cross-validation
+    cv_scores = cross_val_score(
+        model, X_train, y_train, cv=10, scoring='accuracy')
+    print(f"\n{model_name} 10-Fold Cross-Validation Results:")
+    print(f"Mean Accuracy: {cv_scores.mean():.4f}")
+    print(f"Standard Deviation: {cv_scores.std():.4f}")
