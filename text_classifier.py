@@ -140,6 +140,22 @@ for model_name, model in models.items():
     # Evaluate with 10-fold cross-validation
     cv_scores = cross_val_score(
         model, X_train, y_train, cv=10, scoring='accuracy')
-    print(f"\n{model_name} 10-Fold Cross-Validation Results:")
-    print(f"Mean Accuracy: {cv_scores.mean():.4f}")
-    print(f"Standard Deviation: {cv_scores.std():.4f}")
+
+
+# Evaluate models on the test set
+for model_name, model in models.items():
+    # Predict on the test set
+    y_pred = model.predict(X_test)
+
+    # Calculate accuracy
+    accuracy = accuracy_score(y_test, y_pred)
+
+    # Generate classification report (includes precision, recall, F1-score)
+    report = classification_report(y_test, y_pred, target_names=[
+                                   'complaint', 'complement', 'request'])
+
+    # Print results
+    print(f"\n{model_name} Test Set Results:")
+    print(f"Accuracy: {accuracy:.4f}")
+    print("Classification Report:")
+    print(report)
