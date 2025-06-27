@@ -11,6 +11,7 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 import re
+from sklearn.model_selection import GridSearchCV
 
 
 # Download NLTK resources (run once)
@@ -154,8 +155,72 @@ for model_name, model in models.items():
     report = classification_report(y_test, y_pred, target_names=[
                                    'complaint', 'complement', 'request'])
 
-    # Print results
-    print(f"\n{model_name} Test Set Results:")
+
+# Define parameter grids for each model
+param_grids = {
+    'Logistic Regression': {
+        'C': [0.1, 1.0, 10.0],  # Inverse of regularization strength
+        'max_iter': [1000]
+    },
+    'Naive Bayes': {
+        'alpha': [0.1, 0.5, 1.0]  # Smoothing parameter
+    },
+    'Linear SVM': {
+        'C': [0.1, 1.0, 10.0]  # Regularization parameter
+    }
+}
+
+# Also tune TF-IDF max_features
+tfidf_param_grid = {
+    'max_features': [100, 500, 1000]
+}
+
+# Store best models
+best_models = {}
+
+# Tune TF-IDF and each model
+for max_features in tfidf_param_grid['max_features']:
+    print(f"\nTuning with TF-IDF max_features={max_features}")
+
+    # Re-run TF-IDF with different max_features
+    vectorizer = TfidfVectorizer(max_features=max_features)
+    X = vectorizer.fit_transform(df['cleaned_tweet']).toarray()
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
+    # Tune each model
+    for model_name, model in models.items():
+        print(f"  Tuning {model_name}...")
+        grid_search = GridSearchCV(
+            model,
+            param_grids[model_name],
+            cv=10,
+            scoring='accuracy',
+            n_jobs=-1
+        )
+        grid_search.fit(X_train, y_train)
+
+        # Store best model
+        best_models[f"{model_name}_max_features_{max_features}"] = {
+            'model': grid_search.best_estimator_,
+            'best_params': grid_search.best_params_,
+            'best_score': grid_search.best_score_
+        }
+
+        # Print best parameters and cross-validation score
+        print(f"    Best parameters: {grid_search.best_params_}")
+        print(
+            f"    Best cross-validation accuracy: {grid_search.best_score_:.4f}")
+
+# Evaluate best models on test set
+for key, info in best_models.items():
+    model = info['model']
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    report = classification_report(y_test, y_pred, target_names=[
+                                   'complaint', 'complement', 'request'])
+    print(f"\nTest Set Results for {key}:")
     print(f"Accuracy: {accuracy:.4f}")
     print("Classification Report:")
     print(report)
