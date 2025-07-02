@@ -14,6 +14,7 @@ from nltk.stem import WordNetLemmatizer
 import re
 import joblib
 import warnings
+from preprocess import preprocess_text
 
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning,
@@ -21,12 +22,12 @@ warnings.filterwarnings("ignore", category=RuntimeWarning,
 warnings.filterwarnings("ignore", category=RuntimeWarning,
                         module="sklearn.utils.extmath")
 
-# Download NLTK resources (run once)
+# Download NLTK resources (run once, commented out after first run)
 # nltk.download('punkt', quiet=True)
 # nltk.download('stopwords', quiet=True)
 # nltk.download('wordnet', quiet=True)
 
-# Sample dataset (in real cases, load from a CSV or database)
+# Sample dataset
 data = {
     'tweet': [
         # Complaints (15 samples)
@@ -94,37 +95,18 @@ data = {
 # Create DataFrame
 df = pd.DataFrame(data)
 
-# Define y globally
-y = df['label']
-
-# Preprocessing function
-
-
-def preprocess_text(text):
-    # Convert to lowercase
-    text = text.lower()
-    # Remove URLs, mentions, hashtags, and special characters
-    text = re.sub(r'http\S+|@\w+|#\w+|[^a-zA-Z\s]', '', text)
-    # Tokenize
-    tokens = word_tokenize(text)
-    # Remove stop words
-    stop_words = set(stopwords.words('english'))
-    tokens = [word for word in tokens if word not in stop_words]
-    # Lemmatize
-    lemmatizer = WordNetLemmatizer()
-    tokens = [lemmatizer.lemmatize(word) for word in tokens]
-    # Join tokens back into a string
-    return ' '.join(tokens)
-
+# Note: The dataset contains only 45 tweets (15 per class), limiting performance.
+# Accuracy and classification of 'complement' and 'request' classes will improve with a larger dataset.
 
 # Apply preprocessing to the tweet column
 df['cleaned_tweet'] = df['tweet'].apply(preprocess_text)
+y = df['label']
 
-# Initialize models
+# Initialize models with class weighting
 logistic_model = LogisticRegression(
-    max_iter=1000, random_state=42, solver='liblinear')
+    max_iter=1000, random_state=42, solver='liblinear', class_weight='balanced')
 naive_bayes_model = MultinomialNB()
-svm_model = LinearSVC(random_state=42, max_iter=5000)
+svm_model = LinearSVC(random_state=42, max_iter=5000, class_weight='balanced')
 
 # Dictionary to store models and their names
 models = {
@@ -136,20 +118,20 @@ models = {
 # Define parameter grids for each model
 param_grids = {
     'Logistic Regression': {
-        'C': [0.001, 0.01, 0.1, 1.0],  # Smaller C for stronger regularization
+        'C': [0.001, 0.01, 0.1, 1.0]
     },
     'Naive Bayes': {
-        'alpha': [0.1, 0.5, 1.0, 2.0, 5.0]  # Larger smoothing parameters
+        'alpha': [0.1, 0.5, 1.0, 2.0, 5.0]
     },
     'Linear SVM': {
-        'C': [0.001, 0.01, 0.1, 1.0]  # Smaller C for stronger regularization
+        'C': [0.001, 0.01, 0.1, 1.0]
     }
 }
 
-# TF-IDF parameter grid
+# TF-IDF parameter grid with bigrams
 tfidf_param_grid = {
-    'max_features': [50, 100, 200],  # Reduced feature dimensions
-    'ngram_range': [(1, 1)]  # Only unigrams to reduce sparsity
+    'max_features': [100, 500, 1000],
+    'ngram_range': [(1, 1), (1, 2)]  # Unigrams and bigrams
 }
 
 # Store best models
@@ -165,7 +147,6 @@ for max_features in tfidf_param_grid['max_features']:
         vectorizer = TfidfVectorizer(
             max_features=max_features, ngram_range=ngram_range)
         X = vectorizer.fit_transform(df['cleaned_tweet'])
-        # Clip TF-IDF values to avoid extreme values
         X = np.clip(X.toarray(), -1, 1)
 
         # Normalize features for Logistic Regression and Linear SVM
@@ -187,7 +168,7 @@ for max_features in tfidf_param_grid['max_features']:
                     cv=10,
                     scoring='accuracy',
                     n_jobs=-1,
-                    error_score=0  # Return 0 score if fitting fails
+                    error_score=0
                 )
 
                 # Use original sparse X_train for Naive Bayes
@@ -208,7 +189,6 @@ for max_features in tfidf_param_grid['max_features']:
                     'scaler': scaler if model_name != 'Naive Bayes' else None
                 }
 
-                # Print best parameters and cross-validation score
                 print(f"    Best parameters: {grid_search.best_params_}")
                 print(
                     f"    Best cross-validation accuracy: {grid_search.best_score_:.4f}")
@@ -234,7 +214,6 @@ for key, info in best_models.items():
         continue
 
     try:
-        # Transform test set
         X_test_transformed = vectorizer.transform(
             df['cleaned_tweet'].iloc[y_test.index]).toarray()
         X_test_transformed = np.clip(X_test_transformed, -1, 1)
@@ -298,7 +277,7 @@ if best_model is not None:
 
     # Re-train the best model on the full dataset
     try:
-        X_final = vectorizer.fit_transform(df['cleaned_tweet']).toarray()
+        X_final = best_vectorizer.fit_transform(df['cleaned_tweet']).toarray()
         X_final = np.clip(X_final, -1, 1)
         if best_scaler:
             X_final = best_scaler.fit_transform(X_final)
@@ -319,15 +298,11 @@ else:
 
 def classify_tweet(tweet, vectorizer, model, scaler=None):
     try:
-        # Preprocess the tweet
         cleaned_tweet = preprocess_text(tweet)
-        # Transform using the saved TF-IDF vectorizer
         tweet_vector = vectorizer.transform([cleaned_tweet]).toarray()
         tweet_vector = np.clip(tweet_vector, -1, 1)
-        # Apply scaling if the model requires it
         if scaler:
             tweet_vector = scaler.transform(tweet_vector)
-        # Predict the category
         prediction = model.predict(tweet_vector)[0]
         return prediction
     except Exception as e:
@@ -352,3 +327,15 @@ if best_model is not None:
         print(f"Predicted Category: {prediction}\n")
 else:
     print("\nNo valid model available for classifying new tweets.")
+
+# Generate requirements.txt
+requirements = [
+    "pandas",
+    "numpy",
+    "scikit-learn",
+    "nltk",
+    "joblib"
+]
+with open("requirements.txt", "w") as f:
+    for req in requirements:
+        f.write(f"{req}\n")

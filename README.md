@@ -1,2 +1,222 @@
-# NLP-TweetTextClassifier
-Python implementation for classifying customer tweets into complaints, complements, and requests. Features TF-IDF, Logistic Regression, Naive Bayes, Linear SVM, 10-fold cross-validation, and hyperparameter tuning. Ideal for NLP enthusiasts to build and adapt text classifiers.
+# Tweet Text Classifier
+
+This project implements a text classification system to categorize tweets into three classes: **complaints**, **complements**, or **requests**. It uses Natural Language Processing (NLP) techniques with scikit-learn, including TF-IDF for feature extraction and Logistic Regression, Naive Bayes, and Linear SVM models for classification. Hyperparameter tuning is performed using GridSearchCV to optimize model performance. The classifier is trained on a small dataset of 45 tweets, with the best model saved for reuse in classifying new tweets.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Files](#files)
+- [Example Output](#example-output)
+- [Limitations](#limitations)
+- [Future Improvements](#future-improvements)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Overview
+
+The Tweet Text Classifier is a Python-based NLP project that processes tweets to determine whether they express a complaint (e.g., "Your service is terrible!"), a complement (e.g., "Great job, keep it up!"), or a request (e.g., "Can you add more payment options?"). The project uses:
+
+- **Preprocessing**: Tweets are cleaned by converting to lowercase, removing URLs, mentions, hashtags, and special characters, tokenizing, removing stop words, and lemmatizing.
+- **Feature Extraction**: TF-IDF vectorization with unigrams and bigrams, limited to 100, 500, or 1000 features.
+- **Models**: Logistic Regression, Multinomial Naive Bayes, and Linear SVM, with class weighting for balanced performance.
+- **Hyperparameter Tuning**: GridSearchCV optimizes TF-IDF parameters (`max_features`, `ngram_range`) and model parameters (`C` for Logistic Regression and Linear SVM, `alpha` for Naive Bayes).
+- **Evaluation**: Models are evaluated on a test set, with the best model saved for future predictions.
+
+The project is designed to be modular and reusable, with scripts for training (`text_classifier.py`) and predicting (`predict.py`). Due to the small dataset (45 tweets), performance is limited (test accuracy ~0.44), but the framework is extensible for larger datasets.
+
+## Features
+
+- Preprocesses raw tweets for consistent input.
+- Supports three classification models with hyperparameter tuning.
+- Uses bigrams to capture phrases (e.g., "customer support").
+- Saves the best model, TF-IDF vectorizer, and scaler for reuse.
+- Includes a separate prediction script for classifying new tweets.
+- Handles numerical stability with feature clipping and scaling.
+- Generates a `requirements.txt` file for easy dependency installation.
+
+## Prerequisites
+
+- **Python**: 3.8 or higher
+- **Dependencies**: Listed in `requirements.txt` (pandas, numpy, scikit-learn, nltk, joblib)
+- **NLTK Resources**: Required for text preprocessing
+  ```python
+  import nltk
+  nltk.download('punkt')
+  nltk.download('stopwords')
+  nltk.download('wordnet')
+  ```
+
+## Installation
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/<your-username>/NLP-TweetTextClassifier.git
+   cd NLP-TweetTextClassifier
+   ```
+
+2. **Set Up a Virtual Environment** (optional but recommended):
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On macOS/Linux
+   venv\Scripts\activate     # On Windows
+   ```
+
+3. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Download NLTK Resources**:
+   Run the following Python code once:
+   ```python
+   import nltk
+   nltk.download('punkt')
+   nltk.download('stopwords')
+   nltk.download('wordnet')
+   ```
+
+## Usage
+
+### Training the Classifier
+
+Run the main script to train models, tune hyperparameters, evaluate performance, and save the best model:
+```bash
+python text_classifier.py
+```
+
+This script:
+- Preprocesses the dataset of 45 tweets.
+- Trains and tunes Logistic Regression, Naive Bayes, and Linear SVM models.
+- Evaluates models on a test set (20% of data).
+- Saves the best model (`best_text_classifier.pkl`), TF-IDF vectorizer (`tfidf_vectorizer.pkl`), and scaler (`scaler.pkl`).
+- Generates `requirements.txt`.
+- Tests the best model on five example tweets.
+
+### Classifying New Tweets
+
+Use the `predict.py` script to classify new tweets with the saved model:
+```bash
+python predict.py
+```
+
+You can modify `predict.py` to include your own tweets by editing the `new_tweets` list:
+```python
+new_tweets = [
+    "Your app is fantastic, great work!",
+    "Why is the service so slow today?",
+    "Can you help me reset my account?"
+]
+```
+
+### Example Command
+```bash
+python predict.py
+```
+
+## Files
+
+- **`text_classifier.py`**: Main script for training, tuning, evaluating, and saving the classifier.
+- **`preprocess.py`**: Contains the `preprocess_text` function for cleaning tweets.
+- **`predict.py`**: Script to load the saved model and classify new tweets.
+- **`requirements.txt`**: List of Python dependencies (generated by `text_classifier.py`).
+- **`best_text_classifier.pkl`**: Saved best model (Logistic Regression, Naive Bayes, or Linear SVM).
+- **`tfidf_vectorizer.pkl`**: Saved TF-IDF vectorizer.
+- **`scaler.pkl`**: Saved StandardScaler (if applicable, for Logistic Regression or Linear SVM).
+- **`README.md`**: This file, providing project documentation.
+
+## Example Output
+
+Running `text_classifier.py` produces output similar to:
+
+```
+Tuning with TF-IDF max_features=100, ngram_range=(1, 1)
+  Tuning Logistic Regression...
+    Best parameters: {'C': 0.1}
+    Best cross-validation accuracy: 0.4167
+  Tuning Naive Bayes...
+    Best parameters: {'alpha': 1.0}
+    Best cross-validation accuracy: 0.4083
+  Tuning Linear SVM...
+    Best parameters: {'C': 0.01}
+    Best cross-validation accuracy: 0.4167
+
+...
+
+Test Set Results for Logistic Regression_max_features_100_ngram_(1, 1):
+Accuracy: 0.4444
+Classification Report:
+              precision    recall  f1-score   support
+   complaint       0.33      0.67      0.44         3
+  complement       0.00      0.00      0.00         3
+     request       1.00      0.67      0.80         3
+    accuracy                           0.44         9
+   macro avg       0.44      0.44      0.41         9
+weighted avg       0.44      0.44      0.41         9
+
+...
+
+Best Model: Logistic Regression_max_features_100_ngram_(1, 1)
+Best Parameters: {'C': 0.1}
+Best Cross-Validation Accuracy: 0.4167
+Test Set Accuracy: 0.4444
+
+Classifying New Tweets:
+Tweet: I love the new update, it's so smooth and intuitive!
+Predicted Category: complement
+
+Tweet: Why does it crash every time I open it? So frustrating.
+Predicted Category: complaint
+
+Tweet: Is there a way to change my email address on file?
+Predicted Category: request
+
+Tweet: Great customer support—quick and helpful responses!
+Predicted Category: complement
+
+Tweet: This feature is useless now, bring back the old version.
+Predicted Category: request
+```
+
+Running `predict.py` produces:
+```
+Classifying New Tweets:
+Tweet: I love the new update, it's so smooth and intuitive!
+Predicted Category: complement
+...
+```
+
+## Limitations
+
+- **Small Dataset**: The training dataset contains only 45 tweets (15 per class), resulting in low test accuracy (~0.44) and poor performance on the "complement" class (zero precision/recall in some cases). A larger dataset would significantly improve performance.
+- **Feature Sparsity**: Even with bigrams, the small dataset limits the effectiveness of TF-IDF features.
+- **Model Bias**: The classifier may misclassify requests as complaints (e.g., "Is there a way to change my email address on file?" as a complaint in earlier versions) due to limited distinguishing features.
+- **No Advanced Models**: The project uses traditional models (Logistic Regression, Naive Bayes, Linear SVM) and does not include neural networks or pretrained language models, which could improve performance with more data.
+
+## Future Improvements
+
+- **Expand Dataset**: Collect or generate more labeled tweets (e.g., 100+ per class) to improve accuracy and generalization.
+- **Data Augmentation**: Use libraries like `nlpaug` to paraphrase existing tweets, increasing dataset size.
+- **Advanced Models**: Experiment with neural networks (e.g., using `tensorflow` or `transformers` with BERT) for better performance on larger datasets.
+- **Feature Engineering**: Explore additional features, such as sentiment scores or part-of-speech tags, to enhance classification.
+- **Logging**: Add logging to track model performance and errors in a file for debugging.
+- **Web Interface**: Develop a simple web app (e.g., using Flask or Streamlit) to input tweets and display predictions interactively.
+
+## Contributing
+
+Contributions are welcome! To contribute:
+
+1. Fork the repository.
+2. Create a new branch: `git checkout -b feature-name`.
+3. Make changes and commit: `git commit -m "Add feature"`.
+4. Push to the branch: `git push origin feature-name`.
+5. Open a pull request.
+
+Please include tests and documentation for new features.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
