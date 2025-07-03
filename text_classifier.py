@@ -328,7 +328,7 @@ if best_model is not None:
 else:
     print("\nNo valid model available for classifying new tweets.")
 
-# Generate requirements.txt
+# Generate the requirements.txt
 requirements = [
     "pandas",
     "numpy",
